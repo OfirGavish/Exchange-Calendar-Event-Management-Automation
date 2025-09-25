@@ -33,8 +33,8 @@ This solution provides automated calendar event creation and management using Az
 
 ```mermaid
 graph TB
-    SP[📊 SharePoint<br/>Excel Files] --> AS[☁️ Azure Storage<br/>Static Website]
-    AS --> AA[🤖 Azure Automation<br/>Account]
+    SP[📊 SharePoint<br/>Excel Files] --> AA[🤖 Azure Automation<br/>Account]
+    AA --> AS[☁️ Azure Storage<br/>Static Website]
     AS --> WD[🌐 Web Dashboard<br/>index.html]
     AS --> LA[📋 Log Analyzer<br/>log-analyzer.html]
     AA --> PS[⚙️ PowerShell<br/>Runbook]
