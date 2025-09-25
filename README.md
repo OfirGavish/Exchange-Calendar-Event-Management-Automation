@@ -33,37 +33,55 @@ This solution provides automated calendar event creation and management using Az
 
 ```mermaid
 graph TB
-    SP[📊 SharePoint<br/>Excel Files] --> AA[🤖 Azure Automation<br/>Account]
-    AA --> AS[☁️ Azure Storage<br/>Static Website]
-    AS --> WD[🌐 Web Dashboard<br/>index.html]
-    AS --> LA[📋 Log Analyzer<br/>log-analyzer.html]
-    AA --> PS[⚙️ PowerShell<br/>Runbook]
+    %% Central Orchestrator
+    AA[🤖 Azure Automation<br/>Account] --> PS[⚙️ PowerShell<br/>Runbook]
+    
+    %% PowerShell Runbook Operations
+    PS --> SP[📊 SharePoint<br/>Excel Files]
     PS --> MG[🔗 Microsoft Graph API<br/>Calendar & Groups]
     PS --> EO[📧 Exchange Online<br/>Distribution Groups]
-    PS --> LOGS[📝 Log Files<br/>$web/logs/]
-    LOGS --> AS
+    PS --> AS[☁️ Azure Storage<br/>Static Website]
+    
+    %% SharePoint Bi-directional Flow
+    SP -.->|Download Excel| PS
+    PS -.->|Upload Updated Excel<br/>(DateOfLastRun)| SP
+    
+    %% API Interactions
+    PS -.->|Create Calendar Events| MG
+    PS -.->|Resolve Group Members| EO
+    
+    %% Log Storage Flow
+    PS -.->|Store Log Files| AS
+    AS --> LOGS[📝 Log Files<br/>$web/logs/]
+    
+    %% Web Dashboard Access
+    AS --> WD[🌐 Web Dashboard<br/>index.html]
+    AS --> LA[📋 Log Analyzer<br/>log-analyzer.html]
     WD --> LOGS
     LA --> LOGS
-    
-    %% Data Sources
-    SP -.->|Event Data| PS
-    PS -.->|Calendar Events| MG
-    PS -.->|Group Members| EO
     
     %% User Interactions
     USER[👤 User] --> WD
     USER --> LA
     
+    %% Authentication & Permissions Flow
+    PS -.->|Certificate Auth| MG
+    PS -.->|Certificate Auth| EO
+    PS -.->|Sites.Selected| SP
+    PS -.->|Managed Identity| AS
+    
     %% Styling
     classDef azure fill:#0078d4,stroke:#106ebe,stroke-width:2px,color:#fff
     classDef microsoft fill:#00bcf2,stroke:#0078d4,stroke-width:2px,color:#fff
-    classDef web fill:#28a745,stroke:#1e7e34,stroke-width:2px,color:#fff
+    classDef automation fill:#28a745,stroke:#1e7e34,stroke-width:2px,color:#fff
+    classDef web fill:#17a2b8,stroke:#138496,stroke-width:2px,color:#fff
     classDef data fill:#6c757d,stroke:#495057,stroke-width:2px,color:#fff
     classDef user fill:#ffc107,stroke:#e0a800,stroke-width:2px,color:#000
     
     class AS,AA azure
     class MG,EO,SP microsoft
-    class WD,LA,PS web
+    class PS automation
+    class WD,LA web
     class LOGS data
     class USER user
 ```
