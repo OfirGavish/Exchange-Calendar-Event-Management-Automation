@@ -34,41 +34,35 @@ This solution provides automated calendar event creation and management using Az
 ```mermaid
 graph TB
     %% Central Orchestrator
-    AA[🤖 Azure Automation<br/>Account] --> PSR[⚙️ PowerShell<br/>Runbook]
+    AA[🤖 Azure Automation Account] --> PSR[⚙️ PowerShell Runbook]
     
     %% PowerShell Runbook Operations
-    PSR --> SP[📊 SharePoint<br/>Excel Files]
-    PSR --> MG[🔗 Microsoft Graph API<br/>Calendar & Groups]
-    PSR --> EO[📧 Exchange Online<br/>Distribution Groups]
-    PSR --> AS[☁️ Azure Storage<br/>Static Website]
+    PSR --> SP[📊 SharePoint Excel Files]
+    PSR --> MG[🔗 Microsoft Graph API]
+    PSR --> EO[📧 Exchange Online]
+    PSR --> AS[☁️ Azure Storage]
     
     %% SharePoint Bi-directional Flow
-    SP -.->|Download Excel| PSR
-    PSR -.->|Upload Updated Excel with DateOfLastRun| SP
+    SP -.->|Excel Data| PSR
+    PSR -.->|Updates| SP
     
     %% API Interactions
-    PSR -.->|Create Calendar Events| MG
-    PSR -.->|Resolve Group Members| EO
+    PSR -.->|Events| MG
+    PSR -.->|Groups| EO
     
     %% Log Storage Flow
-    PSR -.->|Store Log Files| AS
-    AS --> LOGS[📝 Log Files<br/>$web/logs/]
+    PSR -.->|Logs| AS
+    AS --> LOGS[📝 Log Files]
     
     %% Web Dashboard Access
-    AS --> WD[🌐 Web Dashboard<br/>index.html]
-    AS --> LA[📋 Log Analyzer<br/>log-analyzer.html]
-    WD --> LOGS
-    LA --> LOGS
+    AS --> WD[🌐 Web Dashboard]
+    AS --> LA[📋 Log Analyzer]
+    WD -.-> LOGS
+    LA -.-> LOGS
     
     %% User Interactions
     USER[👤 User] --> WD
     USER --> LA
-    
-    %% Authentication & Permissions Flow
-    PSR -.->|Certificate Auth| MG
-    PSR -.->|Certificate Auth| EO
-    PSR -.->|Sites.Selected| SP
-    PSR -.->|Managed Identity| AS
     
     %% Styling
     classDef azure fill:#0078d4,stroke:#106ebe,stroke-width:2px,color:#fff
