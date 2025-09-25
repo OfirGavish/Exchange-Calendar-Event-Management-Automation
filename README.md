@@ -2,7 +2,124 @@
 
 ## Overview
 
-This solution provides automated calendar event> ⚠️ **Note*> 4. Configure API permissions and Sites.Selected permissions
+This solution provides automated calendar event creation and management using Azure Automation, PowerShell, and Microsoft Graph API. It reads event data from Excel files stored in SharePoint and creates calendar events for individual users and groups, with comprehensive logging and monitoring capabilities.
+
+## 📋 Table of Contents
+
+- [Features](#features)
+- [Architecture](#architecture)
+- [Prerequisites](#prerequisites)
+- [Quick Deploy](#quick-deploy)
+- [Automated Configuration Scripts](#automated-configuration-scripts)
+- [Manual Setup Instructions](#manual-setup-instructions)
+  - [Azure Automation Account Setup](#azure-automation-account-setup)
+  - [Storage Account Configuration](#storage-account-configuration)
+  - [Web Dashboard Deployment](#web-dashboard-deployment)
+- [Usage Guide](#usage-guide)
+- [Monitoring and Logging](#monitoring-and-logging)
+- [Troubleshooting](#troubleshooting)
+- [File Structure](#file-structure)
+
+## ✨ Features
+
+- **Automated Calendar Event Creation**: Creates calendar events for individual users and groups
+- **SharePoint Integration**: Reads event data from Excel files stored in SharePoint
+- **Smart Group Handling**: Automatically resolves distribution groups and M365 groups to individual members
+- **Intelligent Caching**: Optimizes performance with address caching to prevent redundant API calls
+- **Comprehensive Logging**: Detailed logging with Azure Storage integration for monitoring
+- **Web Dashboard**: Real-time monitoring dashboard with log analysis capabilities
+- **Error Handling**: Robust retry logic and error classification for better reliability
+- **Duplicate Prevention**: Checks for existing events to prevent duplicates
+
+## 🏗️ Architecture
+
+```mermaid
+graph TB
+    %% Central Orchestrator
+    AA[🤖 Azure Automation Account] --> PSR[⚙️ PowerShell Runbook]
+    
+    %% PowerShell Runbook Operations
+    PSR --> SP[📊 SharePoint Excel Files]
+    PSR --> MG[🔗 Microsoft Graph API]
+    PSR --> EO[📧 Exchange Online]
+    PSR --> AS[☁️ Azure Storage]
+    
+    %% SharePoint Bi-directional Flow
+    SP -.->|Excel Data| PSR
+    PSR -.->|Updates| SP
+    
+    %% API Interactions
+    PSR -.->|Events| MG
+    PSR -.->|Groups| EO
+    
+    %% Log Storage Flow
+    PSR -.->|Logs| AS
+    AS --> LOGS[📝 Log Files]
+    
+    %% Web Dashboard Access
+    AS --> WD[🌐 Web Dashboard]
+    AS --> LA[📋 Log Analyzer]
+    WD -.-> LOGS
+    LA -.-> LOGS
+    
+    %% User Interactions
+    USER[👤 User] --> WD
+    USER --> LA
+    
+    %% Styling
+    classDef azure fill:#0078d4,stroke:#106ebe,stroke-width:2px,color:#fff
+    classDef microsoft fill:#00bcf2,stroke:#0078d4,stroke-width:2px,color:#fff
+    classDef automation fill:#28a745,stroke:#1e7e34,stroke-width:2px,color:#fff
+    classDef web fill:#17a2b8,stroke:#138496,stroke-width:2px,color:#fff
+    classDef data fill:#6c757d,stroke:#495057,stroke-width:2px,color:#fff
+    classDef user fill:#ffc107,stroke:#e0a800,stroke-width:2px,color:#000
+    
+    class AS,AA azure
+    class MG,EO,SP microsoft
+    class PSR automation
+    class WD,LA web
+    class LOGS data
+    class USER user
+```
+
+## 📋 Prerequisites
+
+- Azure subscription with appropriate permissions
+- Microsoft 365 tenant with Exchange Online
+- SharePoint site for storing Excel files
+- Azure Automation Account
+- Azure Storage Account
+- App Registration with required API permissions
+
+## 🚀 Quick Deploy
+
+Deploy the required Azure resources with one click:
+
+### Deploy Storage Account
+
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fofirga%2FExchange-Calendar-Event-Management-Automation%2Fmain%2Fdeploy%2Fstorage-template.json)
+
+This deploys:
+- Azure Storage Account with static website hosting
+- CORS configuration for web dashboard access
+- `$web` container for hosting the dashboard files
+
+### Deploy Automation Account
+
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fofirga%2FExchange-Calendar-Event-Management-Automation%2Fmain%2Fdeploy%2Fautomation-template.json)
+
+This deploys:
+- Azure Automation Account with managed identity
+- All required configuration variables
+- Ready for PowerShell module installation
+
+> ⚠️ **Note**: After deployment, you still need to:
+> 1. Install PowerShell modules in the Automation Account
+> 2. Create and configure App Registration
+> 3. Upload certificates and runbook script
+> 4. Configure API permissions and Sites.Selected permissions
+
+📖 **[Complete Deployment Guide](deploy/DEPLOYMENT-GUIDE.md)** - Detailed deployment instructions, parameters, and troubleshooting
 
 ## 🤖 Automated Configuration Scripts
 
@@ -38,15 +155,16 @@ This solution provides automated calendar event> ⚠️ **Note*> 4. Configure AP
 
 ## 🔧 Manual Setup Instructions
 
-If you prefer manual setup or need to complete the remaining configuration steps:ter deployment, you still need to:
-> 1. Install PowerShell modules in the Automation Account
-> 2. Create and configure App Registration
-> 3. Upload certificates and runbook script
-> 4. Configure API permissions and Sites.Selected permissions
+If you prefer manual setup or need to complete the remaining configuration steps:propriate permissions
+- Microsoft 365 tenant with Exchange Online
+- SharePoint site for storing Excel files
+- Azure Automation Account
+- Azure Storage Account
+- App Registration with required API permissions
 
-📖 **[Complete Deployment Guide](deploy/DEPLOYMENT-GUIDE.md)** - Detailed deployment instructions, parameters, and troubleshooting
+## 🚀 Quick Deploy
 
-## 🔧 Manual Setup Instructionson and management using Azure Automation, PowerShell, and Microsoft Graph API. It reads event data from Excel files stored in SharePoint and creates calendar events for individual users and groups, with comprehensive logging and monitoring capabilities.
+Deploy the required Azure resources with one click:ated calendar event creation and management using Azure Automation, PowerShell, and Microsoft Graph API. It reads event data from Excel files stored in SharePoint and creates calendar events for individual users and groups, with comprehensive logging and monitoring capabilities.
 
 ## 📋 Table of Contents
 
