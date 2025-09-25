@@ -81,16 +81,217 @@ graph TB
 
 ### Azure Automation Account Setup
 
-For detailed instructions on setting up the Azure Automation Account, installing required modules, and configuring permissions, please refer to the comprehensive guide:
+#### 1. Create Azure Automation Account
 
-**📖 [Complete Azure Automation Setup Guide](https://www.mscloudninja.com/pages/eventcalendarautomation.html)**
+1. **Create the Automation Account**:
+   - Navigate to Azure Portal → **Create a resource** → **Automation**
+   - **Resource Group**: Create new or use existing
+   - **Name**: Choose a descriptive name (e.g., `calendar-event-automation`)
+   - **Region**: Select your preferred region
+   - **Create Azure Run As account**: **Yes** (for managed identity)
 
-This guide covers:
-- Creating and configuring Azure Automation Account
-- Installing PowerShell modules (Microsoft.Graph, ImportExcel, ExchangeOnlineManagement)
-- Setting up App Registration and certificate authentication
-- Configuring required API permissions
-- Setting up managed identity authentication
+2. **Enable Managed Identity**:
+   - Go to your Automation Account → **Settings** → **Identity**
+   - Set **System assigned** status to **On**
+   - **Save** and note the **Object ID** for later use
+
+#### 2. Install Required PowerShell Modules
+
+Navigate to **Automation Account** → **Shared Resources** → **Modules** → **Browse Gallery**
+
+Install these modules **in order** (wait for each to complete before installing the next):
+
+1. **Microsoft.Graph.Authentication** (Required first)
+   - Search for "Microsoft.Graph.Authentication"
+   - Click **Import** → **OK**
+   - Wait for status to show "Available"
+
+2. **Microsoft.Graph** (Main Graph module)
+   - Search for "Microsoft.Graph"
+   - Click **Import** → **OK**
+   - **This takes 15-30 minutes** - be patient!
+
+3. **ImportExcel**
+   - Search for "ImportExcel"
+   - Click **Import** → **OK**
+
+4. **ExchangeOnlineManagement**
+   - Search for "ExchangeOnlineManagement"
+   - Click **Import** → **OK**
+
+5. **Az.Storage** (for blob logging)
+   - Search for "Az.Storage"
+   - Click **Import** → **OK**
+
+6. **Az.Accounts** (for managed identity authentication)
+   - Search for "Az.Accounts"  
+   - Click **Import** → **OK**
+
+> **⚠️ Important**: Module installation can take 30-60 minutes total. Monitor the **Import Status** and ensure each module shows "Available" before proceeding.
+
+#### 3. Create App Registration for Authentication
+
+1. **Create App Registration**:
+   - Go to **Azure Active Directory** → **App registrations** → **New registration**
+   - **Name**: `Calendar-Event-Automation`
+   - **Supported account types**: Accounts in this organizational directory only
+   - **Redirect URI**: Leave blank
+   - Click **Register**
+
+2. **Note the Application Details**:
+   - **Application (client) ID**: Copy this value
+   - **Directory (tenant) ID**: Copy this value
+
+3. **Create and Upload Certificate**:
+   ```powershell
+   # Run this PowerShell to create a self-signed certificate
+   $cert = New-SelfSignedCertificate -CertStoreLocation "Cert:\CurrentUser\My" `
+     -Subject "CN=CalendarAutomation" -KeySpec KeyExchange -FriendlyName "CalendarAutomation"
+   
+   # Export certificate
+   $password = ConvertTo-SecureString -String "YourStrongPassword" -Force -AsPlainText
+   Export-PfxCertificate -Cert $cert -FilePath "C:\temp\CalendarAutomation.pfx" -Password $password
+   
+   # Export public key for App Registration
+   Export-Certificate -Cert $cert -FilePath "C:\temp\CalendarAutomation.cer"
+   ```
+
+4. **Upload Certificate to App Registration**:
+   - In your App Registration → **Certificates & secrets** → **Certificates**
+   - Click **Upload certificate** → Select the `.cer` file
+   - **Description**: "Calendar Automation Certificate"
+   - Click **Add**
+
+5. **Upload Certificate to Automation Account**:
+   - Go to **Automation Account** → **Shared Resources** → **Certificates**
+   - Click **+ Add a certificate**
+   - **Name**: `CalendarAutomationCert` (exact name used in script)
+   - **Upload a certificate file**: Select the `.pfx` file
+   - **Password**: Enter the password you used
+   - **Exportable**: No
+   - Click **Create**
+
+#### 4. Configure API Permissions
+
+In your **App Registration** → **API permissions**:
+
+1. **Microsoft Graph Permissions** (Application permissions):
+   - `Calendars.ReadWrite` - Create and manage calendar events
+   - `Directory.Read.All` - Read directory data
+   - `User.Read.All` - Read all users' profiles
+   - `Group.Read.All` - Read all groups
+   - `Files.Read` - **CRITICAL** for SharePoint file access
+   - `Sites.Selected` - **CRITICAL** for specific SharePoint site access
+
+2. **Exchange Online Permissions**:
+   - `Exchange.ManageAsApp` - Manage Exchange as application
+
+3. **Grant Admin Consent**:
+   - Click **Grant admin consent for [Your Organization]**
+   - Click **Yes** to confirm
+
+#### 5. Configure Sites.Selected Permissions for SharePoint
+
+> **🔑 This is CRITICAL** for the script to update Excel files back to SharePoint with `DateOfLastRun`
+
+**Option A: Using PowerShell PnP (Recommended)**
+
+```powershell
+# Install PnP PowerShell if not already installed
+Install-Module -Name PnP.PowerShell -Force
+
+# Connect to your tenant (replace with your admin URL)
+Connect-PnPOnline -Url "https://yourtenant-admin.sharepoint.com" -Interactive
+
+# Grant Sites.Selected permission to your specific site
+# Replace with your App ID and Site URL
+Grant-PnPAzureADAppSitePermission -AppId "YOUR-APP-CLIENT-ID" `
+  -DisplayName "Calendar Event Automation" `
+  -Site "https://yourtenant.sharepoint.com/sites/yoursite" `
+  -Permissions Write
+```
+
+**Option B: Using Graph API**
+
+```powershell
+# First, get your site ID
+$siteUrl = "https://yourtenant.sharepoint.com/sites/yoursite"
+$siteId = Invoke-RestMethod -Uri "https://graph.microsoft.com/v1.0/sites/$($siteUrl.Replace('https://','').Replace('/',':'))" -Headers @{Authorization="Bearer $accessToken"}
+
+# Grant permission
+$body = @{
+    roles = @("write")
+    grantedToIdentities = @(
+        @{
+            application = @{
+                id = "YOUR-APP-CLIENT-ID"
+                displayName = "Calendar Event Automation"
+            }
+        }
+    )
+} | ConvertTo-Json -Depth 4
+
+Invoke-RestMethod -Uri "https://graph.microsoft.com/v1.0/sites/$($siteId.id)/permissions" `
+  -Method POST -Body $body -ContentType "application/json" `
+  -Headers @{Authorization="Bearer $accessToken"}
+```
+
+#### 6. Configure Exchange Online Permissions
+
+1. **Connect to Exchange Online PowerShell**:
+   ```powershell
+   Install-Module -Name ExchangeOnlineManagement -Force
+   Connect-ExchangeOnline
+   ```
+
+2. **Create Application Access Policy**:
+   ```powershell
+   # Replace with your App ID
+   New-ApplicationAccessPolicy -AppId "YOUR-APP-CLIENT-ID" `
+     -PolicyScopeType "All" `
+     -AccessRight "RestrictAccess" `
+     -Description "Calendar Event Automation - Limited Access"
+   ```
+
+#### 7. Grant Storage Account Permissions
+
+Your Automation Account's **Managed Identity** needs access to the Storage Account:
+
+1. Go to your **Storage Account** → **Access Control (IAM)**
+2. Click **+ Add** → **Add role assignment**
+3. **Role**: `Storage Blob Data Contributor`
+4. **Assign access to**: Managed Identity
+5. **Members**: Select your Automation Account's managed identity
+6. Click **Review + assign**
+
+#### 8. Configure Script Variables
+
+Update these variables in the PowerShell script:
+
+```powershell
+# Update these with your actual values
+$TenantId = "YOUR-TENANT-ID"  # From App Registration
+$TenantDomain = "yourtenant.onmicrosoft.com"  # Your tenant domain
+$SiteURL = "https://yourtenant.sharepoint.com/sites/yoursite"
+$LibraryName = "/sites/yoursite/Shared%20Documents/YourFolder"
+$ExcelFileName = "EventData_With_Organizer.xlsx"
+$DefaultOrganizerEmail = "hr@yourdomain.com"
+$ClientId = "YOUR-APP-CLIENT-ID"  # From App Registration
+$StorageAccountName = "yourstorageaccount"
+```
+
+#### 9. Test the Setup
+
+1. **Create a test Excel file** in your SharePoint library with the required columns
+2. **Create a test runbook** in Azure Automation with a small portion of the script
+3. **Run the test** to verify all permissions and connections work
+4. **Check the logs** in your storage account under `$web/logs/`
+
+> **📝 Pro Tips:**
+> - Module installation is the longest part (30-60 minutes)
+> - Sites.Selected permission is often missed but critical for Excel file updates
+> - Test with a small Excel file first to verify all connections
+> - Monitor the logs dashboard to catch permission issues early
 
 ### Storage Account Configuration
 
