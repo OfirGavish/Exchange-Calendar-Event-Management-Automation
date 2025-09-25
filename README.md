@@ -191,7 +191,7 @@ Install these modules **in order** (wait for each to complete before installing 
 
 3. **ImportExcel** (Excel file processing)
    - Search for "ImportExcel"
-   - Click **Import** → **OK**
+   - Click **Import** → **OK"
 
 4. **ExchangeOnlineManagement** (Exchange Online groups)
    - Search for "ExchangeOnlineManagement"
@@ -203,7 +203,7 @@ Install these modules **in order** (wait for each to complete before installing 
 
 6. **Az.Accounts** (Azure authentication)
    - Search for "Az.Accounts"  
-   - Click **Import** → **OK**
+   - Click **Import** → **OK"
 
 > ⚠️ **Important**: Install modules in the exact order shown above. The Microsoft.Graph module is particularly large and can take 15-30 minutes to install.
 
@@ -217,257 +217,28 @@ Install these modules **in order** (wait for each to complete before installing 
 **Option B: Manual Process**
 
 1. **Create App Registration in Azure AD**:
-- Microsoft 365 tenant with Exchange Online
-- SharePoint site for storing Excel files
-- Azure Automation Account
-- Azure Storage Account
-- App Registration with required API permissions
-
-## � Quick Deploy
-
-Deploy the required Azure resources with one click:
-
-### Deploy Storage Account
-
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fofirga%2FExchange-Calendar-Event-Management-Automation%2Fmain%2Fdeploy%2Fstorage-template.json)
-
-This deploys:
-- Azure Storage Account with static website hosting
-- CORS configuration for web dashboard access
-- `$web` container for hosting the dashboard files
-
-### Deploy Automation Account
-
-[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fofirga%2FExchange-Calendar-Event-Management-Automation%2Fmain%2Fdeploy%2Fautomation-template.json)
-
-This deploys:
-- Azure Automation Account with managed identity
-- All required configuration variables
-- Ready for PowerShell module installation
-
-> ⚠️ **Note**: After deployment, you still need to:
-> 1. Install PowerShell modules in the Automation Account
-> 2. Create and configure App Registration
-> 3. Upload certificates and runbook script
-> 4. Configure API permissions and Sites.Selected permissions
-
-## �🔧 Manual Setup Instructions
-
-If you prefer manual setup or need to complete the remaining configuration steps:
-
-### Azure Automation Account Setup
-
-#### 1. Create Azure Automation Account
-
-1. **Create the Automation Account**:
-   - Navigate to Azure Portal → **Create a resource** → **Automation**
-   - **Resource Group**: Create new or use existing
-   - **Name**: Choose a descriptive name (e.g., `calendar-event-automation`)
-   - **Region**: Select your preferred region
-   - **Create Azure Run As account**: **Yes** (for managed identity)
-
-2. **Enable Managed Identity**:
-   - Go to your Automation Account → **Settings** → **Identity**
-   - Set **System assigned** status to **On**
-   - **Save** and note the **Object ID** for later use
-
-#### 2. Install Required PowerShell Modules
-
-Navigate to **Automation Account** → **Shared Resources** → **Modules** → **Browse Gallery**
-
-Install these modules **in order** (wait for each to complete before installing the next):
-
-1. **Microsoft.Graph.Authentication** (Required first)
-   - Search for "Microsoft.Graph.Authentication"
-   - Click **Import** → **OK**
-   - Wait for status to show "Available"
-
-2. **Microsoft.Graph** (Main Graph module)
-   - Search for "Microsoft.Graph"
-   - Click **Import** → **OK**
-   - **This takes 15-30 minutes** - be patient!
-
-3. **ImportExcel**
-   - Search for "ImportExcel"
-   - Click **Import** → **OK**
-
-4. **ExchangeOnlineManagement**
-   - Search for "ExchangeOnlineManagement"
-   - Click **Import** → **OK**
-
-5. **Az.Storage** (for blob logging)
-   - Search for "Az.Storage"
-   - Click **Import** → **OK**
-
-6. **Az.Accounts** (for managed identity authentication)
-   - Search for "Az.Accounts"  
-   - Click **Import** → **OK**
-
-> **⚠️ Important**: Module installation can take 30-60 minutes total. Monitor the **Import Status** and ensure each module shows "Available" before proceeding.
-
-#### 3. Create App Registration for Authentication
-
-1. **Create App Registration**:
    - Go to **Azure Active Directory** → **App registrations** → **New registration**
    - **Name**: `Calendar-Event-Automation`
    - **Supported account types**: Accounts in this organizational directory only
    - **Redirect URI**: Leave blank
    - Click **Register**
 
-2. **Note the Application Details**:
-   - **Application (client) ID**: Copy this value
-   - **Directory (tenant) ID**: Copy this value
-
-3. **Create and Upload Certificate**:
+2. **Generate Client Certificate**:
    ```powershell
-   # Run this PowerShell to create a self-signed certificate
-   $cert = New-SelfSignedCertificate -CertStoreLocation "Cert:\CurrentUser\My" `
-     -Subject "CN=CalendarAutomation" -KeySpec KeyExchange -FriendlyName "CalendarAutomation"
+   # Create self-signed certificate
+   $cert = New-SelfSignedCertificate -Subject "CN=Calendar-Event-Automation" `
+     -CertStoreLocation "Cert:\CurrentUser\My" -KeySpec KeyExchange
    
-   # Export certificate
-   $password = ConvertTo-SecureString -String "YourStrongPassword" -Force -AsPlainText
-   Export-PfxCertificate -Cert $cert -FilePath "C:\temp\CalendarAutomation.pfx" -Password $password
-   
-   # Export public key for App Registration
-   Export-Certificate -Cert $cert -FilePath "C:\temp\CalendarAutomation.cer"
+   # Export certificate for upload
+   Export-Certificate -Cert $cert -FilePath ".\CalendarAutomation.cer"
    ```
 
-4. **Upload Certificate to App Registration**:
-   - In your App Registration → **Certificates & secrets** → **Certificates**
-   - Click **Upload certificate** → Select the `.cer` file
-   - **Description**: "Calendar Automation Certificate"
+3. **Upload Certificate to App Registration**:
+   - Go to **Certificates & secrets** → **Certificates** → **Upload certificate**
+   - Select the `.cer` file created above
    - Click **Add**
 
-5. **Upload Certificate to Automation Account**:
-   - Go to **Automation Account** → **Shared Resources** → **Certificates**
-   - Click **+ Add a certificate**
-   - **Name**: `CalendarAutomationCert` (exact name used in script)
-   - **Upload a certificate file**: Select the `.pfx` file
-   - **Password**: Enter the password you used
-   - **Exportable**: No
-   - Click **Create**
-
-#### 4. Configure API Permissions
-
-In your **App Registration** → **API permissions**:
-
-1. **Microsoft Graph Permissions** (Application permissions):
-   - `Calendars.ReadWrite` - Create and manage calendar events
-   - `Directory.Read.All` - Read directory data
-   - `User.Read.All` - Read all users' profiles
-   - `Group.Read.All` - Read all groups
-   - `Files.Read` - **CRITICAL** for SharePoint file access
-   - `Sites.Selected` - **CRITICAL** for specific SharePoint site access
-
-2. **Exchange Online Permissions**:
-   - `Exchange.ManageAsApp` - Manage Exchange as application
-
-3. **Grant Admin Consent**:
-   - Click **Grant admin consent for [Your Organization]**
-   - Click **Yes** to confirm
-
-#### 5. Configure Sites.Selected Permissions for SharePoint
-
-> **🔑 This is CRITICAL** for the script to update Excel files back to SharePoint with `DateOfLastRun`
-
-**Option A: Using PowerShell PnP (Recommended)**
-
-```powershell
-# Install PnP PowerShell if not already installed
-Install-Module -Name PnP.PowerShell -Force
-
-# Connect to your tenant (replace with your admin URL)
-Connect-PnPOnline -Url "https://yourtenant-admin.sharepoint.com" -Interactive
-
-# Grant Sites.Selected permission to your specific site
-# Replace with your App ID and Site URL
-Grant-PnPAzureADAppSitePermission -AppId "YOUR-APP-CLIENT-ID" `
-  -DisplayName "Calendar Event Automation" `
-  -Site "https://yourtenant.sharepoint.com/sites/yoursite" `
-  -Permissions Write
-```
-
-**Option B: Using Graph API**
-
-```powershell
-# First, get your site ID
-$siteUrl = "https://yourtenant.sharepoint.com/sites/yoursite"
-$siteId = Invoke-RestMethod -Uri "https://graph.microsoft.com/v1.0/sites/$($siteUrl.Replace('https://','').Replace('/',':'))" -Headers @{Authorization="Bearer $accessToken"}
-
-# Grant permission
-$body = @{
-    roles = @("write")
-    grantedToIdentities = @(
-        @{
-            application = @{
-                id = "YOUR-APP-CLIENT-ID"
-                displayName = "Calendar Event Automation"
-            }
-        }
-    )
-} | ConvertTo-Json -Depth 4
-
-Invoke-RestMethod -Uri "https://graph.microsoft.com/v1.0/sites/$($siteId.id)/permissions" `
-  -Method POST -Body $body -ContentType "application/json" `
-  -Headers @{Authorization="Bearer $accessToken"}
-```
-
-#### 6. Configure Exchange Online Permissions
-
-1. **Connect to Exchange Online PowerShell**:
-   ```powershell
-   Install-Module -Name ExchangeOnlineManagement -Force
-   Connect-ExchangeOnline
-   ```
-
-2. **Create Application Access Policy**:
-   ```powershell
-   # Replace with your App ID
-   New-ApplicationAccessPolicy -AppId "YOUR-APP-CLIENT-ID" `
-     -PolicyScopeType "All" `
-     -AccessRight "RestrictAccess" `
-     -Description "Calendar Event Automation - Limited Access"
-   ```
-
-#### 7. Grant Storage Account Permissions
-
-Your Automation Account's **Managed Identity** needs access to the Storage Account:
-
-1. Go to your **Storage Account** → **Access Control (IAM)**
-2. Click **+ Add** → **Add role assignment**
-3. **Role**: `Storage Blob Data Contributor`
-4. **Assign access to**: Managed Identity
-5. **Members**: Select your Automation Account's managed identity
-6. Click **Review + assign**
-
-#### 8. Configure Script Variables
-
-Update these variables in the PowerShell script:
-
-```powershell
-# Update these with your actual values
-$TenantId = "YOUR-TENANT-ID"  # From App Registration
-$TenantDomain = "yourtenant.onmicrosoft.com"  # Your tenant domain
-$SiteURL = "https://yourtenant.sharepoint.com/sites/yoursite"
-$LibraryName = "/sites/yoursite/Shared%20Documents/YourFolder"
-$ExcelFileName = "EventData_With_Organizer.xlsx"
-$DefaultOrganizerEmail = "hr@yourdomain.com"
-$ClientId = "YOUR-APP-CLIENT-ID"  # From App Registration
-$StorageAccountName = "yourstorageaccount"
-```
-
-#### 9. Test the Setup
-
-1. **Create a test Excel file** in your SharePoint library with the required columns
-2. **Create a test runbook** in Azure Automation with a small portion of the script
-3. **Run the test** to verify all permissions and connections work
-4. **Check the logs** in your storage account under `$web/logs/`
-
-> **📝 Pro Tips:**
-> - Module installation is the longest part (30-60 minutes)
-> - Sites.Selected permission is often missed but critical for Excel file updates
-> - Test with a small Excel file first to verify all connections
-> - Monitor the logs dashboard to catch permission issues early
+📖 **[Complete Manual Setup Guide](docs/MANUAL-SETUP.md)** - Detailed step-by-step instructions
 
 ### Storage Account Configuration
 
@@ -501,10 +272,15 @@ To allow the web dashboard to access log files in the `logs` folder:
    - **Exposed headers**: `*`
    - **Max age**: `3600`
 
-#### 4. Set up Folder Structure
+3. Click **Save**
 
-Create the following folder structure in the `$web` container:
+#### 4. Create the `logs` folder
 
+1. Go to **Data storage** > **Containers**
+2. Select the **$web** container
+3. Create a new folder called `logs`
+
+> **📁 Expected folder structure in `$web` container:**
 ```
 $web/
 ├── index.html
@@ -523,200 +299,209 @@ $web/
 **Using Azure Storage Explorer:**
 1. Download and install [Azure Storage Explorer](https://azure.microsoft.com/features/storage-explorer/)
 2. Connect to your storage account
-3. Navigate to `$web` container
-4. Upload the HTML files
+3. Navigate to the `$web` container
+4. Upload both HTML files to the root of the container
 
-**Using Azure CLI:**
-```bash
-az storage blob upload --account-name <storage-account-name> --container-name '$web' --name index.html --file index.html
-az storage blob upload --account-name <storage-account-name> --container-name '$web' --name log-analyzer.html --file log-analyzer.html
-```
+**Using Azure Portal:**
+1. Go to your Storage Account → **Data storage** → **Containers** → **$web**
+2. Click **Upload** → Select files → Upload both HTML files
 
 #### 2. Configure Azure Automation for Log Storage
 
-Update the PowerShell script variables:
+Update the PowerShell script variables to match your storage account:
 
 ```powershell
-# Storage Account configuration for Azure Automation logging
-$StorageAccountName = "<YourStorageAccountName>"
-$LogContainerName = "`$web"  # Static website container
-$LogFolderPath = "logs"      # Folder within the container
+$StorageAccountName = "yourstorageaccount"  # Replace with your actual storage account name
 ```
 
-#### 3. Set up Permissions
-
-Ensure the Azure Automation Account's Managed Identity has the following role assignment on the Storage Account:
-- **Storage Blob Data Contributor** role
+The script will automatically create log files in the `$web/logs/` directory, accessible via:
+- `https://yourstorageaccount.z6.web.core.windows.net/logs/`
 
 ## 📖 Usage Guide
 
 ### Using the Main Dashboard (index.html)
 
-The main dashboard provides an overview of your automation system:
+1. **Access the dashboard** via your Storage Account's static website URL
+2. **Monitor automation runs** in real-time
+3. **View logs** directly in the browser
+4. **Analyze performance** with built-in metrics
+5. **Dark/Light mode** toggle for better visibility
 
-1. **Access the Dashboard**: Navigate to your static website URL (e.g., `https://yourstorageaccount.z6.web.core.windows.net/`)
-
-2. **Dashboard Features**:
-   - **Quick Stats**: View active runbooks, successful runs, warnings, and errors
-   - **Critical Events**: See recent critical events and alerts from your automation runs
-   - **Log Storage Status**: Monitor log file availability and storage information
-   - **Quick Actions**: Direct access to log viewer and latest log downloads
-
-3. **Dark Mode**: Toggle between light and dark themes using the toggle in the header
+**Key features:**
+- Real-time log streaming
+- Event processing statistics
+- Error highlighting and filtering
+- Performance metrics dashboard
 
 ### Using the Log Analyzer (log-analyzer.html)
 
-The log analyzer provides detailed log viewing and analysis capabilities:
+1. **Advanced log analysis** with intelligent issue detection
+2. **Pattern recognition** for common errors
+3. **Performance trend analysis**
+4. **Export capabilities** for detailed reporting
 
-1. **Access the Log Analyzer**: 
-   - Click "Open Viewer" from the main dashboard, or
-   - Navigate directly to `/log-analyzer.html`
+**Advanced features:**
+- AI-powered issue detection
+- Historical trend analysis
+- Custom log filtering
+- Performance bottleneck identification
 
-2. **Log File Discovery**:
-   - **Azure Storage (Production)**: Automatically discovers all `.log` files using Azure Storage REST API
-   - **Local Testing**: Searches for specific log file patterns for development/testing
+### Running the Automation
 
-3. **Log Analysis Features**:
-   - **File List**: Browse all available log files with timestamps and file sizes
-   - **Advanced Filtering**: Filter logs by level (ERROR, WARNING, INFO, SUCCESS) and search terms
-   - **Intelligent Analysis**: Automatic identification of common issues and solutions
-   - **Health Score**: Overall system health assessment based on log patterns
-   - **Download Capability**: Download individual log files for offline analysis
-
-4. **Understanding the Analysis**:
-   - **Issues Detected**: The system identifies common patterns like distribution group failures, Graph API errors, and permission issues
-   - **Solutions**: Each identified issue includes recommended solutions and troubleshooting steps
-   - **Health Score**: Calculated based on error rates, warning patterns, and successful operations
-
-### Excel File Format
-
-Your SharePoint Excel file should contain the following columns:
-
-| Column | Description | Example |
-|--------|-------------|---------|
-| Subject | Event title | "Team Meeting" |
-| StartTime | Event start date/time | "2025-09-25 09:00:00" |
-| EndTime | Event end date/time | "2025-09-25 10:00:00" |
-| AttendeeEmails | Comma-separated email addresses | "user1@company.com,group@company.com" |
-| Location | Event location (optional) | "Conference Room A" |
-| Body | Event description (optional) | "Monthly team sync meeting" |
-| ShowAs | Calendar availability | "Busy" or "Free" |
-| DateOfLastRun | Last processing date (auto-updated) | "2025-09-24 15:30:00" |
+1. **Upload your Excel file** to the configured SharePoint library
+2. **Trigger the runbook** in Azure Automation (manual or scheduled)
+3. **Monitor progress** via the web dashboard
+4. **Review results** in the log analyzer
 
 ## 📊 Monitoring and Logging
 
 ### Log Storage
 
-- **Location**: Logs are stored in the Storage Account under `$web/logs/`
-- **Naming Convention**: `calendar-automation-log-YYYYMMDD-HHMMSS.log`
-- **Retention**: Configure retention policies as needed
-- **Access**: Logs are accessible via the web dashboard and can be downloaded directly
+All logs are stored in your Azure Storage Account under the `$web/logs/` path:
+- **Structured JSON logs** for programmatic access
+- **Human-readable format** for manual review
+- **Automatic retention** based on your storage account settings
 
 ### Log Levels
 
-- **ERROR**: Critical issues that prevent event creation
-- **WARNING**: Issues that might affect functionality but don't prevent execution
-- **INFO**: General information about processing steps
-- **SUCCESS**: Successful operations and confirmations
+- **INFO**: General operation information
+- **WARNING**: Non-critical issues that don't stop execution
+- **ERROR**: Critical errors that prevent processing
+- **DEBUG**: Detailed diagnostic information
 
-### Performance Monitoring
+### Monitoring Tools
 
-The system includes intelligent caching and performance statistics:
+1. **Web Dashboard** (`index.html`):
+   - Real-time log monitoring
+   - Performance metrics
+   - Event processing status
 
-- **Address Cache**: Prevents redundant API calls for user/group lookups
-- **API Efficiency**: Tracks cache hit rates and API call optimization
-- **Retry Logic**: Intelligent retry handling for transient failures
+2. **Log Analyzer** (`log-analyzer.html`):
+   - Advanced log analysis
+   - Issue pattern detection
+   - Historical trends
+
+3. **Azure Monitor Integration**:
+   - Automation Account job status
+   - Resource utilization metrics
+   - Alert configuration
 
 ## 🔧 Troubleshooting
 
-### Common Issues and Solutions
+### Common Issues
 
 #### 1. Log Files Not Appearing in Dashboard
 
-**Symptoms**: Dashboard shows "No log files found" or "Scanning for critical events"
+**Problem**: Dashboard shows "No logs found" or logs don't update
 
-**Solutions**:
-- Verify CORS is properly configured on the Storage Account
-- Check that logs are being created in the correct `$web/logs/` folder
-- Ensure the Automation Account has **Storage Blob Data Contributor** permissions
-- Verify the static website is properly configured
+**Solution**:
+1. Verify the **Storage Account name** in the PowerShell script matches your actual storage account
+2. Check that the **Managed Identity** has `Storage Blob Data Contributor` permissions
+3. Ensure the `$web/logs/` folder exists in your storage account
+4. Verify **CORS settings** allow access from your dashboard URL
 
-#### 2. Distribution Group Lookup Failures
+#### 2. "Insufficient privileges to complete the operation"
 
-**Symptoms**: Errors like "couldn't be found on outlook.com"
+**Problem**: Script fails with Graph API permission errors
 
-**Solutions**:
-- Verify the email addresses are correct in your Excel file
-- Check Exchange Online permissions for the App Registration
-- Ensure the distribution groups exist in your tenant
-- The system will automatically fall back to treating these as individual user emails
+**Solution**:
+1. Verify all **API permissions** are properly configured:
+   - `Calendars.ReadWrite`
+   - `User.Read.All`
+   - `Group.Read.All`
+   - `Sites.Selected`
+2. Ensure **Admin consent** has been granted for all permissions
+3. Check that **Sites.Selected** permission is properly configured for your SharePoint site
 
-#### 3. Microsoft Graph API Errors
+#### 3. Excel File Access Issues
 
-**Symptoms**: "Request_UnsupportedQuery" or "Invalid expression" errors
+**Problem**: "Access denied" when reading Excel files from SharePoint
 
-**Solutions**:
-- Review Graph API permissions in your App Registration
-- Ensure **Calendars.ReadWrite**, **Directory.Read.All**, **User.Read.All**, and **Group.Read.All** permissions are granted
-- Check that admin consent has been provided for all permissions
+**Solution**:
+1. Verify **Sites.Selected** permission is configured for the correct SharePoint site
+2. Check that the **SharePoint site URL** and **library path** are correctly specified
+3. Ensure the **Excel file** exists in the specified location
+4. Verify the **App Registration** has been granted access to the specific site
 
-#### 4. Missing Files.Read Permission
+#### 4. Exchange Online Group Resolution Fails
 
-**Symptoms**: Warnings about "permissions might be missing"
+**Problem**: Distribution groups aren't being resolved to individual members
 
-**Solutions**:
-- Add **Files.Read** permission to your App Registration
-- Grant admin consent for the new permission
-- This permission is required for SharePoint file access
+**Solution**:
+1. Verify **Exchange.ManageAsApp** permission is granted
+2. Check that the **Application Access Policy** is properly configured
+3. Ensure your **tenant admin** has approved the Exchange Online permissions
+4. Test with a simple distribution group first
+
+#### 5. Automation Account Module Issues
+
+**Problem**: Modules fail to import or show as "Failed" status
+
+**Solution**:
+1. **Retry module installation** - temporary Azure issues are common
+2. Install modules **one at a time** in the specified order
+3. Wait for each module to show **"Available"** before installing the next
+4. Clear browser cache and refresh the Modules page
+5. For persistent issues, try installing a slightly older version of the module
+
+### Performance Optimization
+
+#### Slow Event Processing
+
+1. **Enable address caching** in the script (default: enabled)
+2. **Reduce Excel file size** by processing in smaller batches
+3. **Monitor API throttling** and implement appropriate delays
+4. **Use selective imports** for large distribution groups
+
+#### High Memory Usage
+
+1. **Process Excel files in chunks** rather than loading all data at once
+2. **Clear variables** after processing large datasets
+3. **Monitor runbook execution time** and split into smaller operations if needed
 
 ### Log Analysis Insights
 
-The web dashboard provides intelligent analysis of your logs:
+The Log Analyzer provides intelligent insights for common issues:
 
-- **User Fallback Success**: When emails are processed as individual users (this is expected behavior)
-- **Critical Issues**: Distribution group failures, Graph API errors, authentication problems
-- **Performance Metrics**: Cache efficiency, API call optimization, processing times
-- **Health Score**: Overall system health based on error patterns and successful operations
+- **Permission Problems**: Detects and suggests fixes for API permission issues
+- **Performance Bottlenecks**: Identifies slow operations and suggests optimizations
+- **Data Quality Issues**: Flags problematic Excel data formats
+- **Network Issues**: Detects and correlates network-related failures
 
 ## 📁 File Structure
 
 ```
-Exchange Calendar Event Management Automation/
-├── README.md                           # This documentation file
-├── eventscalendarautomation.ps1        # Main PowerShell automation script
-├── index.html                          # Main dashboard web interface
-└── log-analyzer.html                   # Log analysis and viewing interface
+Exchange-Calendar-Event-Management-Automation/
+├── eventscalendarautomation.ps1      # Main PowerShell automation script
+├── index.html                        # Main web dashboard
+├── log-analyzer.html                 # Advanced log analysis tool
+├── README.md                         # This documentation
+├── deploy/                           # Azure ARM deployment templates
+│   ├── storage-template.json         # Storage Account ARM template
+│   ├── automation-template.json      # Automation Account ARM template
+│   └── DEPLOYMENT-GUIDE.md           # Detailed deployment guide
+├── scripts/                          # PowerShell automation scripts
+│   ├── 1-Setup-AppRegistration.ps1   # App Registration setup
+│   ├── 2-Configure-Permissions.ps1   # API permissions configuration
+│   ├── 3-Configure-SharePoint-Permissions.ps1  # SharePoint permissions
+│   ├── INSTALLATION-GUIDE.md         # Scripts installation guide
+│   └── README.md                     # Scripts documentation
+└── docs/                            # Additional documentation
+    └── MANUAL-SETUP.md               # Complete manual setup guide
 ```
 
-### Key Components
+## 🤝 Contributing
 
-- **`eventscalendarautomation.ps1`**: Core automation script that handles event creation, group resolution, and logging
-- **`index.html`**: Main dashboard providing system overview and quick access to logs
-- **`log-analyzer.html`**: Advanced log viewing interface with intelligent analysis capabilities
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/AmazingFeature`)
+3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
+4. Push to the branch (`git push origin feature/AmazingFeature`)
+5. Open a Pull Request
 
-## 🔗 Additional Resources
+## 📄 License
 
-- **[Complete Setup Guide](https://www.mscloudninja.com/pages/eventcalendarautomation.html)**: Detailed Azure Automation Account setup
-- **[Microsoft Graph API Documentation](https://docs.microsoft.com/en-us/graph/)**: API reference and permissions
-- **[Azure Automation Documentation](https://docs.microsoft.com/en-us/azure/automation/)**: Azure Automation best practices
-- **[Azure Storage Static Website](https://docs.microsoft.com/en-us/azure/storage/blobs/storage-blob-static-website)**: Static website hosting guide
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
 
-## 📝 Notes
+---
 
-- The system is designed to handle both individual users and groups (distribution groups and M365 groups)
-- Intelligent caching prevents redundant API calls and improves performance
-- The web dashboard works both in Azure Storage (production) and local development environments
-- All authentication uses certificate-based authentication for security
-- The system includes comprehensive error handling and retry logic for reliability
-- Log analysis provides actionable insights for troubleshooting and optimization
-
-## 🆘 Support
-
-If you encounter issues:
-
-1. Check the log analyzer dashboard for detailed error information
-2. Review the [setup guide](https://www.mscloudninja.com/pages/eventcalendarautomation.html) for configuration details
-3. Verify all permissions and CORS settings are correctly configured
-4. Use the intelligent log analysis features to identify and resolve common issues
-
-The system is designed to be self-diagnosing with comprehensive logging and analysis capabilities to help you quickly identify and resolve any issues.
+**Made with ❤️ for automated calendar management**
