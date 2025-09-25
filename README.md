@@ -2,7 +2,43 @@
 
 ## Overview
 
-This solution provides automated calendar event> ⚠️ **Note**: After deployment, you still need to:
+This solution provides automated calendar event> ⚠️ **Note*> 4. Configure API permissions and Sites.Selected permissions
+
+## 🤖 Automated Configuration Scripts
+
+**NEW!** Automate the remaining setup steps with PowerShell scripts:
+
+### 🚀 Quick Setup (3 Scripts)
+
+```powershell
+# 1. Create App Registration & Certificates
+.\scripts\1-Setup-AppRegistration.ps1 -AutomationAccountName "your-aa-name" -AutomationResourceGroupName "your-rg-name"
+
+# 2. Configure API Permissions  
+.\scripts\2-Configure-Permissions.ps1
+
+# 3. Configure SharePoint Permissions
+.\scripts\3-Configure-SharePoint-Permissions.ps1 -SharePointSiteUrl "https://your-tenant.sharepoint.com/sites/events"
+```
+
+### What Gets Automated:
+✅ **App Registration Creation** - Azure AD app with proper settings  
+✅ **Certificate Generation** - Self-signed certificates for authentication  
+✅ **Certificate Upload** - To both App Registration and Automation Account  
+✅ **API Permissions** - Microsoft Graph and Exchange Online permissions  
+✅ **Sites.Selected** - SharePoint site-specific permissions  
+✅ **Admin Consent** - Guided admin consent process  
+
+### Prerequisites:
+- PowerShell 5.1+
+- Global Administrator or Application Administrator role
+- Contributor access to Automation Account
+
+📖 **[Automation Scripts Guide](scripts/INSTALLATION-GUIDE.md)** - Complete setup automation documentation
+
+## 🔧 Manual Setup Instructions
+
+If you prefer manual setup or need to complete the remaining configuration steps:ter deployment, you still need to:
 > 1. Install PowerShell modules in the Automation Account
 > 2. Create and configure App Registration
 > 3. Upload certificates and runbook script
