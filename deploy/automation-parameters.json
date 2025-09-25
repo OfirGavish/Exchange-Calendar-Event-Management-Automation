@@ -1,0 +1,33 @@
+{
+    "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+    "contentVersion": "1.0.0.0",
+    "parameters": {
+        "automationAccountName": {
+            "value": "exchange-calendar-automation-aa"
+        },
+        "location": {
+            "value": "East US"
+        },
+        "tenantId": {
+            "value": "YOUR_TENANT_ID_HERE"
+        },
+        "tenantDomain": {
+            "value": "your-tenant.onmicrosoft.com"
+        },
+        "sharePointSiteUrl": {
+            "value": "https://your-tenant.sharepoint.com/sites/events"
+        },
+        "sharePointLibraryPath": {
+            "value": "/sites/events/Shared%20Documents/EventData"
+        },
+        "excelFileName": {
+            "value": "EventData_With_Organizer.xlsx"
+        },
+        "defaultOrganizerEmail": {
+            "value": "organizer@your-domain.com"
+        },
+        "storageAccountName": {
+            "value": "your-storage-account-name"
+        }
+    }
+}

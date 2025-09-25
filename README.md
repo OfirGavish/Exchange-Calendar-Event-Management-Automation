@@ -2,7 +2,15 @@
 
 ## Overview
 
-This solution provides automated calendar event creation and management using Azure Automation, PowerShell, and Microsoft Graph API. It reads event data from Excel files stored in SharePoint and creates calendar events for individual users and groups, with comprehensive logging and monitoring capabilities.
+This solution provides automated calendar event> ⚠️ **Note**: After deployment, you still need to:
+> 1. Install PowerShell modules in the Automation Account
+> 2. Create and configure App Registration
+> 3. Upload certificates and runbook script
+> 4. Configure API permissions and Sites.Selected permissions
+
+📖 **[Complete Deployment Guide](deploy/DEPLOYMENT-GUIDE.md)** - Detailed deployment instructions, parameters, and troubleshooting
+
+## 🔧 Manual Setup Instructionson and management using Azure Automation, PowerShell, and Microsoft Graph API. It reads event data from Excel files stored in SharePoint and creates calendar events for individual users and groups, with comprehensive logging and monitoring capabilities.
 
 ## 📋 Table of Contents
 
@@ -89,7 +97,37 @@ graph TB
 - Azure Storage Account
 - App Registration with required API permissions
 
-## 🔧 Setup Instructions
+## � Quick Deploy
+
+Deploy the required Azure resources with one click:
+
+### Deploy Storage Account
+
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fofirga%2FExchange-Calendar-Event-Management-Automation%2Fmain%2Fdeploy%2Fstorage-template.json)
+
+This deploys:
+- Azure Storage Account with static website hosting
+- CORS configuration for web dashboard access
+- `$web` container for hosting the dashboard files
+
+### Deploy Automation Account
+
+[![Deploy to Azure](https://aka.ms/deploytoazurebutton)](https://portal.azure.com/#create/Microsoft.Template/uri/https%3A%2F%2Fraw.githubusercontent.com%2Fofirga%2FExchange-Calendar-Event-Management-Automation%2Fmain%2Fdeploy%2Fautomation-template.json)
+
+This deploys:
+- Azure Automation Account with managed identity
+- All required configuration variables
+- Ready for PowerShell module installation
+
+> ⚠️ **Note**: After deployment, you still need to:
+> 1. Install PowerShell modules in the Automation Account
+> 2. Create and configure App Registration
+> 3. Upload certificates and runbook script
+> 4. Configure API permissions and Sites.Selected permissions
+
+## �🔧 Manual Setup Instructions
+
+If you prefer manual setup or need to complete the remaining configuration steps:
 
 ### Azure Automation Account Setup
 
@@ -307,7 +345,9 @@ $StorageAccountName = "yourstorageaccount"
 
 ### Storage Account Configuration
 
-#### 1. Create Azure Storage Account
+> **💡 Quick Deploy**: Use the [Deploy to Azure button](#deploy-storage-account) above for automated setup with optimal configuration.
+
+#### 1. Create Azure Storage Account (Manual)
 
 1. Create a new Storage Account in Azure Portal
 2. Choose **Standard** performance tier
