@@ -155,96 +155,68 @@ This deploys:
 
 ## 🔧 Manual Setup Instructions
 
-If you prefer manual setup or need to complete the remaining configuration steps:propriate permissions
-- Microsoft 365 tenant with Exchange Online
-- SharePoint site for storing Excel files
-- Azure Automation Account
-- Azure Storage Account
-- App Registration with required API permissions
+If you prefer manual setup or need to complete the remaining configuration steps:
 
-## 🚀 Quick Deploy
+### Azure Automation Account Setup
 
-Deploy the required Azure resources with one click:ated calendar event creation and management using Azure Automation, PowerShell, and Microsoft Graph API. It reads event data from Excel files stored in SharePoint and creates calendar events for individual users and groups, with comprehensive logging and monitoring capabilities.
+#### 1. Create Azure Automation Account
 
-## 📋 Table of Contents
+1. **Create the Automation Account**:
+   - Navigate to Azure Portal → **Create a resource** → **Automation**
+   - **Resource Group**: Create new or use existing
+   - **Name**: Choose a descriptive name (e.g., `calendar-event-automation`)
+   - **Region**: Select your preferred region
+   - **Create Azure Run As account**: **Yes** (for managed identity)
 
-- [Features](#features)
-- [Architecture](#architecture)
-- [Prerequisites](#prerequisites)
-- [Setup Instructions](#setup-instructions)
-  - [Azure Automation Account Setup](#azure-automation-account-setup)
-  - [Storage Account Configuration](#storage-account-configuration)
-  - [Web Dashboard Deployment](#web-dashboard-deployment)
-- [Usage Guide](#usage-guide)
-- [Monitoring and Logging](#monitoring-and-logging)
-- [Troubleshooting](#troubleshooting)
-- [File Structure](#file-structure)
+2. **Enable Managed Identity**:
+   - Go to your Automation Account → **Settings** → **Identity**
+   - Set **System assigned** status to **On**
+   - **Save** and note the **Object ID** for later use
 
-## ✨ Features
+#### 2. Install Required PowerShell Modules
 
-- **Automated Calendar Event Creation**: Creates calendar events for individual users and groups
-- **SharePoint Integration**: Reads event data from Excel files stored in SharePoint
-- **Smart Group Handling**: Automatically resolves distribution groups and M365 groups to individual members
-- **Intelligent Caching**: Optimizes performance with address caching to prevent redundant API calls
-- **Comprehensive Logging**: Detailed logging with Azure Storage integration for monitoring
-- **Web Dashboard**: Real-time monitoring dashboard with log analysis capabilities
-- **Error Handling**: Robust retry logic and error classification for better reliability
-- **Duplicate Prevention**: Checks for existing events to prevent duplicates
+Navigate to **Automation Account** → **Shared Resources** → **Modules** → **Browse Gallery**
 
-## 🏗️ Architecture
+Install these modules **in order** (wait for each to complete before installing the next):
 
-```mermaid
-graph TB
-    %% Central Orchestrator
-    AA[🤖 Azure Automation Account] --> PSR[⚙️ PowerShell Runbook]
-    
-    %% PowerShell Runbook Operations
-    PSR --> SP[📊 SharePoint Excel Files]
-    PSR --> MG[🔗 Microsoft Graph API]
-    PSR --> EO[📧 Exchange Online]
-    PSR --> AS[☁️ Azure Storage]
-    
-    %% SharePoint Bi-directional Flow
-    SP -.->|Excel Data| PSR
-    PSR -.->|Updates| SP
-    
-    %% API Interactions
-    PSR -.->|Events| MG
-    PSR -.->|Groups| EO
-    
-    %% Log Storage Flow
-    PSR -.->|Logs| AS
-    AS --> LOGS[📝 Log Files]
-    
-    %% Web Dashboard Access
-    AS --> WD[🌐 Web Dashboard]
-    AS --> LA[📋 Log Analyzer]
-    WD -.-> LOGS
-    LA -.-> LOGS
-    
-    %% User Interactions
-    USER[👤 User] --> WD
-    USER --> LA
-    
-    %% Styling
-    classDef azure fill:#0078d4,stroke:#106ebe,stroke-width:2px,color:#fff
-    classDef microsoft fill:#00bcf2,stroke:#0078d4,stroke-width:2px,color:#fff
-    classDef automation fill:#28a745,stroke:#1e7e34,stroke-width:2px,color:#fff
-    classDef web fill:#17a2b8,stroke:#138496,stroke-width:2px,color:#fff
-    classDef data fill:#6c757d,stroke:#495057,stroke-width:2px,color:#fff
-    classDef user fill:#ffc107,stroke:#e0a800,stroke-width:2px,color:#000
-    
-    class AS,AA azure
-    class MG,EO,SP microsoft
-    class PSR automation
-    class WD,LA web
-    class LOGS data
-    class USER user
+1. **Microsoft.Graph.Authentication** (Required first)
+   - Search for "Microsoft.Graph.Authentication"
+   - Click **Import** → **OK**
+   - Wait for status to show "Available"
+
+2. **Microsoft.Graph** (Main Graph module)
+   - Search for "Microsoft.Graph"
+   - Click **Import** → **OK**
+   - **This takes 15-30 minutes** - be patient!
+
+3. **ImportExcel** (Excel file processing)
+   - Search for "ImportExcel"
+   - Click **Import** → **OK**
+
+4. **ExchangeOnlineManagement** (Exchange Online groups)
+   - Search for "ExchangeOnlineManagement"
+   - Click **Import** → **OK**
+
+5. **Az.Storage** (Azure Storage logging)
+   - Search for "Az.Storage"
+   - Click **Import** → **OK**
+
+6. **Az.Accounts** (Azure authentication)
+   - Search for "Az.Accounts"  
+   - Click **Import** → **OK**
+
+> ⚠️ **Important**: Install modules in the exact order shown above. The Microsoft.Graph module is particularly large and can take 15-30 minutes to install.
+
+#### 3. Create App Registration and Certificates
+
+**Option A: Use Automation Scripts (Recommended)**
+```powershell
+.\scripts\1-Setup-AppRegistration.ps1 -AutomationAccountName "your-aa-name" -AutomationResourceGroupName "your-rg-name"
 ```
 
-## 📋 Prerequisites
+**Option B: Manual Process**
 
-- Azure subscription with appropriate permissions
+1. **Create App Registration in Azure AD**:
 - Microsoft 365 tenant with Exchange Online
 - SharePoint site for storing Excel files
 - Azure Automation Account
