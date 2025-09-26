@@ -16,8 +16,8 @@ If you prefer to deploy everything at once, deploy in this order:
 Both templates support custom parameters. You can either:
 - Use the Azure Portal UI to fill in parameters during deployment
 - Download and modify the parameter files:
-  - [`storage-parameters.json`](./storage-parameters.json)
-  - [`automation-parameters.json`](./automation-parameters.json)
+  - [`storage-parameters.json`](storage-parameters.json)
+  - [`automation-parameters.json`](automation-parameters.json)
 
 ## 📋 Storage Account Deployment
 
