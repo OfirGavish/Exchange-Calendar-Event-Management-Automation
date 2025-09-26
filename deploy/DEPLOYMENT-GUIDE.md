@@ -170,7 +170,7 @@ az deployment group create \
 
 After successful deployment:
 
-1. Follow the [complete setup guide](README.md#setup-instructions) for manual configuration steps
+1. Follow the [complete setup guide](../README.md#-manual-setup-instructions) for manual configuration steps
 2. Test the automation with a small Excel file
 3. Monitor the web dashboard for successful operation
 4. Set up scheduling for automated runs
