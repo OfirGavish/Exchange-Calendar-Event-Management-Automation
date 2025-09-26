@@ -6,19 +6,19 @@ This solution provides automated calendar event creation and management using Az
 
 ## 📋 Table of Contents
 
-- [Features](#✨-features)
-- [Architecture](#🏗️-architecture)
-- [Prerequisites](#📋-prerequisites)
-- [Quick Deploy](#🚀-quick-deploy)
-- [Automated Configuration Scripts](#🤖-automated-configuration-scripts)
-- [Manual Setup Instructions](#🔧-manual-setup-instructions)
+- [Features](#-features)
+- [Architecture](#️-architecture)
+- [Prerequisites](#-prerequisites)
+- [Quick Deploy](#-quick-deploy)
+- [Automated Configuration Scripts](#-automated-configuration-scripts)
+- [Manual Setup Instructions](#-manual-setup-instructions)
   - [Azure Automation Account Setup](#azure-automation-account-setup)
   - [Storage Account Configuration](#storage-account-configuration)
   - [Web Dashboard Deployment](#web-dashboard-deployment)
-- [Usage Guide](#📖-usage-guide)
-- [Monitoring and Logging](#📊-monitoring-and-logging)
-- [Troubleshooting](#🔧-troubleshooting)
-- [File Structure](#📁-file-structure)
+- [Usage Guide](#-usage-guide)
+- [Monitoring and Logging](#-monitoring-and-logging)
+- [Troubleshooting](#-troubleshooting)
+- [File Structure](#-file-structure)
 
 ## ✨ Features
 
